@@ -1,0 +1,21 @@
+schema_version = "1.0.0"
+
+id = "NakedKeyframeNudge"
+
+version = "0.2.0"
+
+name = "Naked Keyframe Nudge"
+
+tagline = "UI-less version of Keyframe Nudge"
+
+maintainer = "Nikola Nevenov <okuma_10@yahoo.com>"
+
+type = "add-on"
+
+tags = ["Animation","Grease Pencil"]
+
+blender_version_min = "3.2.0"
+
+license = [
+  "SPDX:GPL-2.0-or-later",
+]
