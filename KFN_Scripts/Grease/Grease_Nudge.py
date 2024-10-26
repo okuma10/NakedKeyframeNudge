@@ -3,6 +3,24 @@ import numpy as np
 import types
 # from ..Keyframe.Tools import *
 
+# print(f"\033[2J")
+
+def b_search_i(arr: list[int], target:int)->int:
+    left,right=0,len(arr)-1
+
+    while left <= right:
+        mid = (left+right)>>1
+        if arr[mid] == target:
+            return mid
+        
+        if arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+
+    return -1
+
+
 def get_mesh_keyframe_numbers(mesh_obj) -> list:
     out_data = []
     action = mesh_obj.animation_data.action
@@ -56,13 +74,15 @@ def get_keyframeNumbers_from_object_list(object_list) ->list:
 
 
 def gp_Nudge(control, affect_non_selected, affect_obj_keyframes, affect_all_objects):
+    print("\033[2J")
 
-    Pencils = [pencil for pencil in bpy.data.grease_pencils if bpy.context.active_object.data.as_pointer() == pencil.as_pointer()]
+    Pencils = [pencil for pencil in bpy.data.grease_pencils_v3 if bpy.context.active_object.data.as_pointer() == pencil.as_pointer()]
+    print(f"{Pencils}")
     gp_Nudge_map = {}
 
     selected_keyframes = []
 
-
+    # return 0 
     #n Loop through GP objects
     for pencil in Pencils:
         name = pencil.name
@@ -72,7 +92,7 @@ def gp_Nudge(control, affect_non_selected, affect_obj_keyframes, affect_all_obje
 
         #n Loop through GP object's layers
         for layer in layers:
-            layer_name = layer.info
+            layer_name = layer.name
             keyframes = layer.frames
 
             #n Loop through GP object's keyframes for every layer
@@ -139,17 +159,71 @@ def gp_Nudge(control, affect_non_selected, affect_obj_keyframes, affect_all_obje
 
         # ── Grease Pencil keyframes ───────────────────────────────────────────
         for layer in pencil.layers:
-            for keyframe in layer.frames:
-                if len(selected_keyframes) > 0 and keyframe.frame_number in selected_kf_x:
-                    keyframe_idx = selected_kf_x.index(keyframe.frame_number)
-                    keyframe.frame_number = new_selected_kf_x[keyframe_idx]
-                    continue
+            print(f"{layer.name}")
+            if not layer.lock:
+                layer_keyframes = [keyframe.frame_number for keyframe in layer.frames]
+                print(f"layer frames no. {len(layer_keyframes)}")
+                # print(f"{selected_keyframes}")
+                # print(f"{layer_keyframes}")
+                
+                # idx = b_search_i(selected_kf_x, layer_keyframes[i])
 
-                if affect_non_selected and len(non_selected_kf_x) > 0 and keyframe.frame_number in non_selected_kf_x:
-                    keyframe_idx = non_selected_kf_x.index(keyframe.frame_number)
-                    keyframe.frame_number = new_non_selected_kf_x[keyframe_idx]
+                print(f"\tControl {control}")
+                if control > 0 :
+                    
+                    # ───────────────────────────── Non Selected ─────────────────────────────
+                    if affect_non_selected:
+                        non_sel_len = len(non_selected_kf_x)
+                        for i in range(1, len(non_selected_kf_x)+1):
+                            idx = non_sel_len-i
+                            print(f"idx ({idx})")
+                            if b_search_i(layer_keyframes, non_selected_kf_x[idx]) < 0: 
+                                continue
+                            print(f"{non_selected_kf_x[idx]}")
+                            layer.frames.move(non_selected_kf_x[idx], new_non_selected_kf_x[idx])
+                    # ─────────────────────────────── selected ───────────────────────────────
+                    sel_len = len(selected_kf_x)
+                    for i in range(1, len(selected_kf_x)+1):
+                        idx = sel_len-i
+                        if b_search_i(layer_keyframes, selected_kf_x[idx]) < 0: 
+                            continue
+                        print(f"{selected_kf_x[idx]}")
+                        layer.frames.move(selected_kf_x[idx], new_selected_kf_x[idx])
+                    print("\tLet's move those frames -->")
+                    pass
+                else:
+                    # ─────────────────────────────── selected ───────────────────────────────
+                    for i in range(len(selected_kf_x)):
+                        if b_search_i(layer_keyframes, selected_kf_x[i]) < 0: 
+                            continue
 
-    # print("Inside Nudge 23")
+                        layer.frames.move(selected_kf_x[i],new_selected_kf_x[i])
+                    print("\t<-- Let's move those frames")
+
+                    # ───────────────────────────── Non Selected ─────────────────────────────
+                    if affect_non_selected:
+                        for i in range(len(non_selected_kf_x)):
+                            if b_search_i(layer_keyframes, non_selected_kf_x[i]) < 0: 
+                                continue
+                            layer.frames.move(non_selected_kf_x[i], new_non_selected_kf_x[i])
+
+                layer.frames.update()
+                for frame in layer.frames:
+                    if frame.frame_number in new_selected_kf_x:
+                        frame.select = True
+
+                # for keyframe in layer.frames:
+                #     print(f"{keyframe.frame_number}")
+                #     if len(selected_keyframes) > 0 and keyframe.frame_number in selected_kf_x:
+                #         keyframe_idx = selected_kf_x.index(keyframe.frame_number)
+                #         keyframe.frame_number = new_selected_kf_x[keyframe_idx]
+                #         continue
+                #
+                #     if affect_non_selected and len(non_selected_kf_x) > 0 and keyframe.frame_number in non_selected_kf_x:
+                #         keyframe_idx = non_selected_kf_x.index(keyframe.frame_number)
+                #         keyframe.frame_number = new_non_selected_kf_x[keyframe_idx]
+
+    print("Inside Nudge 23")
     return 0
 
 
