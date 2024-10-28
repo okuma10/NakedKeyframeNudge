@@ -1,25 +1,9 @@
 import bpy
 import numpy as np
 import types
-# from ..Keyframe.Tools import *
+from ..Tools import b_search_i
 
 # print(f"\033[2J")
-
-def b_search_i(arr: list[int], target:int)->int:
-    left,right=0,len(arr)-1
-
-    while left <= right:
-        mid = (left+right)>>1
-        if arr[mid] == target:
-            return mid
-        
-        if arr[mid] < target:
-            left = mid + 1
-        else:
-            right = mid - 1
-
-    return -1
-
 
 def get_mesh_keyframe_numbers(mesh_obj) -> list:
     out_data = []

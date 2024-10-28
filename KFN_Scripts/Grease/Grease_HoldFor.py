@@ -1,10 +1,25 @@
 import bpy
 import numpy as np
 import types
-import bisect
-# from ..Tools import *
+# import bisect
+# from ..Tools import b_search_i
 
-# print("\033[2J")
+def b_search_i(arr: list[int], target:int)->int:
+    left,right=0,len(arr)-1
+
+    while left <= right:
+        mid = (left+right)>>1
+        if arr[mid] == target:
+            return mid
+        
+        if arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+
+    return -1
+
+print("\033[2J")
 def get_mesh_keyframe_numbers(mesh_obj) -> list:
     out_data = []
     action = mesh_obj.animation_data.action
@@ -278,9 +293,14 @@ def Hold_For(usr_inp, affect_non_selected, affect_object_keys, affect_all_object
                 # Assign new data to old positions
                 layers = pencil.layers
                 for layer in layers:
+                    print(f"{layer.name}",end=" ")
                     if not layer.lock:
-                        keyframes = layer.frames # new GPv3 makes this obsolete
-                        
+                        print("🔓")
+                        # continue
+                        keyframes = layer.frames # list of layer keyframe objects(for later use)
+                        keyframe_fns = [keyframe.frame_number for keyframe in keyframes] # a list of the layer keyframe positions(used to pass if we don't have a keyframe corresponding to selected or non selected x lists)
+
+
                         m = len(selected_kf_x)
                         n = len(non_selected_kf_x)
                         # Because of new GPv3 will return ERROR on collisions we have to find the direction
@@ -300,13 +320,15 @@ def Hold_For(usr_inp, affect_non_selected, affect_object_keys, affect_all_object
                         if direction < 0:
                             # Selected
                             for i in range(0, m): 
-                                print(f" ◆ {selected_kf_x[i]} | {new_selected_kf_x[i]}")
+                                if(b_search_i(keyframe_fns, selected_kf_x[i]) < 0):continue
                                 if selected_kf_x[i] == new_selected_kf_x[i]: continue
+                                print(f" ◆ {selected_kf_x[i]} | {new_selected_kf_x[i]}")
                                 layer.frames.move(selected_kf_x[i], new_selected_kf_x[i])
                             # Non Selected
                             if affect_non_selected:
                                 if n > 0:
-                                    for i in range(0, n): # Reverse loop
+                                    for i in range(0, n): 
+                                        if(b_search_i(keyframe_fns, non_selected_kf_x[i]) < 0):continue
                                         print(f" ◇ {non_selected_kf_x[i]} | {new_non_selected_kf_x[i]}")
                                         if non_selected_kf_x[i] == new_non_selected_kf_x[i]: continue
                                         layer.frames.move(non_selected_kf_x[i], new_non_selected_kf_x[i])
@@ -315,29 +337,33 @@ def Hold_For(usr_inp, affect_non_selected, affect_object_keys, affect_all_object
                             if affect_non_selected:
                                 if n > 0:
                                     for i in range(1, n+1): # Reverse loop
+                                        if(b_search_i(keyframe_fns, non_selected_kf_x[n-i]) < 0):continue
                                         if non_selected_kf_x[n-i] == new_non_selected_kf_x[n-i]: continue
                                         print(f" ◇ {non_selected_kf_x[n-i]} | {new_non_selected_kf_x[n-i]}")
                                         layer.frames.move(non_selected_kf_x[n-i], new_non_selected_kf_x[n-i])
 
                             # Selected
                             for i in range(1, m+1): # Reverse loop
-                                print(f" ◆ {selected_kf_x[m-i]} | {new_selected_kf_x[m-i]}")
+                                if(b_search_i(keyframe_fns, selected_kf_x[m-i]) < 0):continue
                                 if selected_kf_x[m-i] == new_selected_kf_x[m-i]: continue
+                                print(f" ◆ {selected_kf_x[m-i]} | {new_selected_kf_x[m-i]}")
                                 layer.frames.move(selected_kf_x[m-i], new_selected_kf_x[m-i])
                         else:
-                            print(f" ERROR : You are appling the script to a single frame while not affecting the non selected keyframes\n\tplease turn 'affect non selected' or select more than 1 keyframe")
+                            print(f" ERROR : You are appling the script to a single frame while not affecting the non selected keyframes.\n\t Or your distance to the next keyframe is already {control}.\nStatus: \n\taffect_non_selected{affect_non_selected}\n\taffect_object_keys{affect_object_keys}\n\taffect_all_objects{affect_all_objects}")
 
 
                         for keyframe in keyframes:
                             if keyframe.frame_number in new_selected_kf_x:
                                 keyframe.select = True
 
-                        return 0
+                    else:
+                        print("🔒")
+
             # if no selected keyframes , report error
             else:
                 print(f'No keyframes selected for object {pencil.name}')
 
-# Hold_For(4,1,1,1)
+# Hold_For(2,1,0,0)
 
 class GP_HoldFor_Operator(bpy.types.Operator):
     bl_idname = "scene.kfn_gp_holdfor"
